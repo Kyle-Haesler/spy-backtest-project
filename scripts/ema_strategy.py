@@ -1,4 +1,5 @@
 import pandas as pd 
+import math
 from load_data import load_spy_data
 
 # Get SPY daily data
@@ -24,16 +25,21 @@ df["Short_Signal"] = (
 
 # Run backtest
 account_value = 100000
+risk_per_trade = .01
 in_position = False
 trades = []
 target_multiplier = 2
-df["Account_Value"] = float(account_value)   
+df["Account_Value"] = float(account_value)
+# Begin plot for buy and hold strategy
+buy_and_hold_shares = math.floor(account_value / df.iloc[0].Close)
+df["Buy_and_Hold_Account_Value"] = buy_and_hold_shares * df.iloc[0].Close
 
 for i in range(1, len(df)):
     # Get previous and current rows
     prev_row = df.iloc[i-1]
     current_row = df.iloc[i]
-
+    # Plot market value
+    df.at[current_row.name, "Buy_and_Hold_Account_Value"] = buy_and_hold_shares * current_row["Close"]   
     # By default, carry forward the previous day's account value
     df.at[current_row.name, "Account_Value"] = df.at[prev_row.name,"Account_Value"]
     # Check to see if we are in a position or not
@@ -43,12 +49,17 @@ for i in range(1, len(df)):
             entry_price = current_row["Open"]
             stop_loss = prev_row["Low"]
             risk = entry_price - stop_loss
+            # Handle gap down
+            if risk <= 0:
+                continue
+            shares = math.floor((account_value * risk_per_trade) / max(risk, .01))
             target = entry_price + (target_multiplier * risk)
             # Add trade to list
             in_position = True
             trade = {
                 "Entry_Date": current_row.name,
                 "Direction": "Long",
+                "Shares": shares,
                 "Entry_Price": entry_price,
                 "Stop_Loss": stop_loss,
                 "Target": target
@@ -59,12 +70,17 @@ for i in range(1, len(df)):
             entry_price = current_row["Open"]
             stop_loss = prev_row["High"]
             risk = stop_loss - entry_price
+            # Handle gap up
+            if risk <= 0:
+                continue
+            shares = math.floor((account_value * risk_per_trade) / max(risk,.01))
             target = entry_price - (target_multiplier * risk)
             # Add trade to list
             in_position = True
             trade = {
                 "Entry_Date": current_row.name,
                 "Direction": "Short",
+                "Shares": shares,
                 "Entry_Price": entry_price,
                 "Stop_Loss": stop_loss,
                 "Target": target
@@ -101,13 +117,14 @@ for i in range(1, len(df)):
         if exit_trade:
             # Calculate return based on full account
             if current_trade["Direction"] == "Long":
-                trade_return = (current_trade["Exit_Price"] - current_trade["Entry_Price"]) / current_trade["Entry_Price"]
+                trade_return = (current_trade["Exit_Price"] - current_trade["Entry_Price"]) * current_trade["Shares"]
             else:
-                trade_return = (current_trade["Entry_Price"] - current_trade["Exit_Price"]) / current_trade["Entry_Price"]
-            account_value *= (1 + trade_return)
+                trade_return = (current_trade["Entry_Price"] - current_trade["Exit_Price"]) * current_trade["Shares"]
+            account_value += trade_return
+            trade["Trade_Return"] = trade_return
             # Update the DataFrame with new account value
             df.at[current_row.name, "Account_Value"] = account_value
             current_trade["Account_Value"] = account_value
             in_position = False
 
-print(df["Account_Value"].min())
+print(df.tail())
