@@ -127,4 +127,5 @@ for i in range(1, len(df)):
             current_trade["Account_Value"] = account_value
             in_position = False
 
-print(df.tail())
+
+
