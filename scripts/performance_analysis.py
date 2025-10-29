@@ -41,7 +41,7 @@ backtest["Buy_Hold_Drawdown"] = (backtest["Buy_and_Hold_Account_Value"] - backte
 # Reset index
 backtest_reset = backtest.reset_index()
 
-# Export results to csv for Power BI
+# Export results to csv
 save_path = "../results/backtest_results.csv"
 backtest_reset.to_csv(save_path, index=False)
 print(f"\n Data saved successfully to {save_path}")
