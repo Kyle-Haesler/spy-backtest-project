@@ -4,7 +4,7 @@ import numpy as np
 
 annual_trading_days = 252
 annual_risk_free_rate = .05
-daily_risk_free_rate = (1+ annual_risk_free_rate)**(1/annual_trading_days)
+daily_risk_free_rate = (1+ annual_risk_free_rate)**(1/annual_trading_days) - 1
 rolling_window = 21
 
 # Calculate performance metrics
