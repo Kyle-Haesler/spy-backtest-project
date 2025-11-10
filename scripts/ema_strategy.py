@@ -127,5 +127,24 @@ for i in range(1, len(df)):
             current_trade["Account_Value"] = account_value
             in_position = False
 
+# Convert trades list to DataFrame
+trades_df = pd.DataFrame(trades)
 
+# Calculate trade return
+trades_df["Trade_Return"] = trades_df.apply(
+    lambda row: (row["Exit_Price"] - row["Entry_Price"]) / row["Entry_Price"]
+    if row["Direction"] == "Long"
+    else (row["Entry_Price"] - row["Exit_Price"]) / row["Entry_Price"],
+    axis=1
+)
+
+# Add in column that lets us know result
+trades_df["Trade_Result"] = trades_df["Trade_Return"].apply(lambda x: "Win" if x > 0 else "Loss")
+
+# Save path
+save_path = "../results/trades.csv"
+trades_df.to_csv(save_path, index=False)
+
+print(f" trades level dataset saved to {save_path}")
+print(trades_df.head())
 
